@@ -110,10 +110,22 @@ class Mysql
                         $match
                     )
                 ) {
+                    $option  = $match[1];
+                    $options = array_reduce(explode(',', $option), function ($c, $i) {
+                        if ("'" !== substr($i, 0, 1)) {
+                            $i = array_pop($c) . ',' . $i;
+                        }
+                        array_push($c, $i);
+                        return $c;
+                    }, []);
+
                     $options = array_map(function ($value) {
-                        return substr($value, 1, strlen($value) - 2);
-                    }, explode(',', $match[1]));
+                        $value = substr($value, 1, strlen($value) - 2);
+                        $value = str_replace("''", "'", $value);
+                        return str_replace('\\\\', '\\', $value);
+                    }, $options);
                 }
+
                 $length = null;
                 break;
             default:
