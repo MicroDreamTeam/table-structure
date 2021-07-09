@@ -13,6 +13,7 @@ use PDO;
  * @method static string getPort()
  * @method static string getCharset()
  * @method static string getDbname()
+ * @method static string getPrefix()
  * @package Itwmw\Validate\Table\Mysql\Drive
  */
 class MysqlConnection
@@ -38,6 +39,8 @@ class MysqlConnection
     /** @var static */
     protected static $instance;
 
+    protected static $prefix;
+
     /** @var PDO */
     protected static $pdo = null;
 
@@ -49,6 +52,8 @@ class MysqlConnection
         self::$port     = $params['port']     ?? '3306';
         self::$charset  = $params['charset']  ?? 'utf8';
         self::$dbname   = $params['database'] ?? '';
+        self::$dbname   = $params['database'] ?? '';
+        self::$prefix   = $params['prefix'] ?? '';
         self::$pdo      = null;
     }
 

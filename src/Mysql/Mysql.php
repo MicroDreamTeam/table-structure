@@ -6,8 +6,9 @@ use PDO;
 
 class Mysql
 {
-    public function listTableColumns(string $table): array
+    public static function listTableColumns(string $table): array
     {
+        $table        = MysqlConnection::getPrefix() . $table;
         $dbName       = MysqlConnection::getDbname();
         $tableColumns = MysqlConnection::connection()->query(
             "SELECT
@@ -33,13 +34,14 @@ class Mysql
 
         $columns = [];
         foreach ($tableColumns as $tableColumn) {
-            $columns[] = $this->getTableFieldDefinition($tableColumn);
+            $columns[] = self::getTableFieldDefinition($tableColumn);
         }
         return $columns;
     }
 
-    public function getDoctrineColumn(string $table, string $column)
+    public static function getDoctrineColumn(string $table, string $column)
     {
+        $table       = MysqlConnection::getPrefix() . $table;
         $dbName      = MysqlConnection::getDbname();
         $tableColumn = MysqlConnection::connection()->query(
             "SELECT
@@ -62,10 +64,10 @@ class Mysql
         if (empty($tableColumn)) {
             return false;
         }
-        return $this->getTableFieldDefinition($tableColumn);
+        return self::getTableFieldDefinition($tableColumn);
     }
 
-    protected function getTableFieldDefinition(array $tableColumn): Column
+    protected static function getTableFieldDefinition(array $tableColumn): Column
     {
         $tableColumn = array_change_key_case($tableColumn, CASE_LOWER);
 
