@@ -6,11 +6,15 @@ use PDO;
 
 class Mysql
 {
-    public static function listTableColumns(string $table): array
+    public function __construct(protected MysqlConnection $connection)
     {
-        $table        = MysqlConnection::getPrefix() . $table;
-        $dbName       = MysqlConnection::getDbname();
-        $tableColumns = MysqlConnection::connection()->query(
+    }
+
+    public function listTableColumns(string $table): array
+    {
+        $table        = $this->connection->getPrefix() . $table;
+        $dbName       = $this->connection->getDbname();
+        $tableColumns = $this->connection->getPdo()->query(
             "SELECT
 							COLUMN_NAME AS Field,
 							COLUMN_TYPE AS Type,
@@ -39,11 +43,11 @@ class Mysql
         return $columns;
     }
 
-    public static function getDoctrineColumn(string $table, string $column)
+    public function getDoctrineColumn(string $table, string $column): bool|Column
     {
-        $table       = MysqlConnection::getPrefix() . $table;
-        $dbName      = MysqlConnection::getDbname();
-        $tableColumn = MysqlConnection::connection()->query(
+        $table       = $this->connection->getPrefix() . $table;
+        $dbName      = $this->connection->getDbname();
+        $tableColumn = $this->connection->getPdo()->query(
             "SELECT
 							COLUMN_NAME AS Field,
 							COLUMN_TYPE AS Type,
@@ -76,10 +80,6 @@ class Mysql
         assert(is_string($dbType));
 
         $length = $tableColumn['length'] ?? strtok('(), ');
-
-        if (! isset($tableColumn['name'])) {
-            $tableColumn['name'] = '';
-        }
 
         $length    = false === $length ? null : $length;
         $precision = null;
@@ -114,10 +114,10 @@ class Mysql
                 ) {
                     $option  = $match[1];
                     $options = array_reduce(explode(',', $option), function ($c, $i) {
-                        if ("'" !== substr($i, 0, 1)) {
+                        if (!str_starts_with($i, "'")) {
                             $i = array_pop($c) . ',' . $i;
                         }
-                        array_push($c, $i);
+                        $c[] = $i;
                         return $c;
                     }, []);
 
@@ -143,24 +143,18 @@ class Mysql
                 break;
         }
 
-        $options = [
-            'type'      => $dbType,
-            'field'     => $tableColumn['field'],
-            'length'    => null !== $length ? (int) $length : null,
-            'unsigned'  => false !== strpos($tableColumn['type'], 'unsigned'),
-            'default'   => $tableColumn['default'],
-            'notNull'   => 'YES' !== $tableColumn['null'],
-            'options'   => $options ?: [],
-            'precision' => null,
-            'comment'   => isset($tableColumn['comment']) && '' !== $tableColumn['comment']
+        return new Column(
+            type: $dbType,
+            field: $tableColumn['field'],
+            length: null !== $length ? (int) $length : null,
+            precision: $precision === null ? null : (int) $precision,
+            unsigned: str_contains($tableColumn['type'], 'unsigned'),
+            default: $tableColumn['default'],
+            notNull: 'YES' !== $tableColumn['null'],
+            comment: isset($tableColumn['comment']) && '' !== $tableColumn['comment']
                 ? $tableColumn['comment']
                 : null,
-        ];
-
-        if (null !== $precision) {
-            $options['precision'] = (int) $precision;
-        }
-
-        return new Column($options);
+            options: $options ?: [],
+        );
     }
 }

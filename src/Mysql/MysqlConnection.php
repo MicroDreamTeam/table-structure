@@ -7,69 +7,65 @@ use PDO;
 /**
  * Class MysqlConnection
  *
- * @method static string getUsername()
- * @method static string getPassword()
- * @method static string getHost()
- * @method static string getPort()
- * @method static string getCharset()
- * @method static string getDbname()
- * @method static string getPrefix()
- * @package Itwmw\Validate\Table\Mysql\Drive
+ * @method string getUsername()
+ * @method string getPassword()
+ * @method string getHost()
+ * @method string getPort()
+ * @method string getCharset()
+ * @method string getDbname()
+ * @method string getPrefix()
  */
 class MysqlConnection
 {
-    /** @var string */
-    protected static $username;
+    protected string $username;
 
-    /** @var string */
-    protected static $password;
+    protected string $password;
 
-    /** @var string */
-    protected static $host;
+    protected string $host;
 
-    /** @var int */
-    protected static $port;
+    protected int $port;
 
-    /** @var string */
-    protected static $charset;
+    protected string $charset;
 
-    /** @var string */
-    protected static $dbname;
+    protected string $dbname;
 
-    /** @var static */
-    protected static $instance;
+    protected static MysqlConnection $instance;
 
-    protected static $prefix;
+    protected string $prefix;
 
-    /** @var PDO */
-    protected static $pdo = null;
+    protected ?PDO $pdo = null;
 
-    public static function setConnection(array $params)
+    public function __construct(array $params = [])
     {
-        self::$username = $params['username'] ?? 'root';
-        self::$password = $params['password'] ?? '';
-        self::$host     = $params['host']     ?? '127.0.0.1';
-        self::$port     = $params['port']     ?? '3306';
-        self::$charset  = $params['charset']  ?? 'utf8';
-        self::$dbname   = $params['database'] ?? '';
-        self::$dbname   = $params['database'] ?? '';
-        self::$prefix   = $params['prefix'] ?? '';
-        self::$pdo      = null;
+        $this->setConnection($params);
     }
 
-    public static function connection(): PDO
+    public function setConnection(array $params = []): static
     {
-        if (null === self::$pdo) {
-            $dsn = 'mysql:host=' . self::$host . ';port=' . self::$port . ';charset=' . self::$charset . ';dbname=' . self::$dbname;
+        $this->username = $params['username'] ?? 'root';
+        $this->password = $params['password'] ?? '';
+        $this->host     = $params['host']     ?? '127.0.0.1';
+        $this->port     = $params['port']     ?? '3306';
+        $this->charset  = $params['charset']  ?? 'utf8';
+        $this->dbname   = $params['database'] ?? '';
+        $this->prefix   = $params['prefix']   ?? '';
+        $this->pdo      = null;
+        return $this;
+    }
 
-            self::$pdo = new PDO($dsn, self::$username, self::$password, [
-                PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES ' . self::$charset
+    public function getPdo(): PDO
+    {
+        if (null === $this->pdo) {
+            $dsn = 'mysql:host=' . $this->host . ';port=' . $this->port . ';charset=' . $this->charset . ';dbname=' . $this->dbname;
+
+            $this->pdo = new PDO($dsn, $this->username, $this->password, [
+                PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES ' . $this->charset
             ]);
 
-            self::$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+            $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
         }
-        
-        return self::$pdo;
+
+        return $this->pdo;
     }
 
     public static function instance(): MysqlConnection
@@ -82,11 +78,11 @@ class MysqlConnection
         return self::$instance;
     }
 
-    public static function __callStatic($name, $arguments)
+    public function __call(string $name, array $arguments)
     {
-        if ('get' === substr($name, 0, 3)) {
+        if (str_starts_with($name, 'get')) {
             $name = lcfirst(substr($name, 3));
-            return self::$$name;
+            return $this->$name;
         }
     }
 }
