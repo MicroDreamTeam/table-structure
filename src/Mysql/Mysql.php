@@ -10,6 +10,21 @@ class Mysql
     {
     }
 
+    /**
+     * 获取表的注释
+     *
+     * @param string $table
+     * @return string
+     */
+    public function getTableComment(string $table): string
+    {
+        $table = $this->connection->getPrefix() . $table;
+        $sql   = "SELECT TABLE_COMMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?";
+        $stmt  = $this->connection->getPdo()->prepare($sql);
+        $stmt->execute([$this->connection->getDbname(), $table]);
+        return $stmt->fetchColumn();
+    }
+
     public function listTableColumns(string $table): array
     {
         $table        = $this->connection->getPrefix() . $table;
@@ -38,7 +53,7 @@ class Mysql
 
         $columns = [];
         foreach ($tableColumns as $tableColumn) {
-            $columns[] = self::getTableFieldDefinition($tableColumn);
+            $columns[$tableColumn['Field']] = self::getTableFieldDefinition($tableColumn);
         }
         return $columns;
     }
